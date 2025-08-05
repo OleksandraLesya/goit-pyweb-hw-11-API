@@ -10,6 +10,8 @@ It supports full CRUD operations, advanced filtering, and birthday reminders.
 - Alembic for database migrations
 - Pydantic validation with email and date parsing
 - Search contacts by name, surname, email
+- Enhanced contact update flexibility (partial updates are now supported)
+- Robust birthday calculation, including proper handling of February 29th in non-leap years.
 - Get contacts with upcoming birthdays
 - Environment-based configuration with `.env`
 - Poetry for dependency management
