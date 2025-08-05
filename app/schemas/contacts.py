@@ -1,5 +1,3 @@
-# app/schemas/contacts.py
-
 from datetime import date
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
@@ -11,15 +9,20 @@ class ContactBase(BaseModel):
     email: EmailStr
     phone_number: str
     birthday: date
-    additional_data: Optional[str] = None
+    notes: Optional[str] = None  # FIX 1: Changed additional_data to notes
 
 # Schema for creating a new contact. It inherits from the base model.
 class ContactCreate(ContactBase):
     pass
 
-# Schema for updating an existing contact. All fields are optional.
-class ContactUpdate(ContactBase):
-    pass
+# Schema for updating an existing contact. All fields are now optional.
+class ContactUpdate(BaseModel): # FIX 2: ContactUpdate no longer inherits directly from ContactBase
+    first_name: Optional[str] = Field(None, min_length=2, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=2, max_length=50)
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    birthday: Optional[date] = None
+    notes: Optional[str] = None
 
 # Schema for the API response. It includes the ID and other fields.
 class ContactResponse(ContactBase):

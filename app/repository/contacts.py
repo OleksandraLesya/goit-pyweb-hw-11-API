@@ -1,10 +1,8 @@
-# app/repository/contacts.py
-
 from typing import List, Type
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from datetime import timedelta, date
+import calendar  # NEW: Import calendar module to check for leap years
 
 from app.models.contacts import Contact
 from app.schemas.contacts import ContactCreate, ContactUpdate
@@ -49,7 +47,9 @@ async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate)
     contact = await get_contact_by_id(db, contact_id)
 
     if contact:
-        for field, value in body.model_dump().items():
+        # Use body.model_dump(exclude_unset=True) to only update provided fields
+        # This is crucial after making ContactUpdate fields optional
+        for field, value in body.model_dump(exclude_unset=True).items():
             setattr(contact, field, value)
         await db.commit()
         await db.refresh(contact)
@@ -84,10 +84,24 @@ async def search_contacts(db: AsyncSession, query: str) -> List[Contact]:
 async def upcoming_birthdays(db: AsyncSession) -> List[Contact]:
     """
     Get a list of contacts with upcoming birthdays in the next 7 days.
+    FIX 3: Handles February 29th correctly in non-leap years.
     """
     today = date.today()
     next_week = today + timedelta(days=7)
 
     contacts = await get_contacts(db)
 
-    return [c for c in contacts if today <= c.birthday.replace(year=today.year) <= next_week]
+    upcoming = []
+    for contact in contacts:
+        # NEW FIX: Check for Feb 29th and non-leap year BEFORE calling replace()
+        if contact.birthday.month == 2 and contact.birthday.day == 29 and not calendar.isleap(today.year):
+            # If it's Feb 29th and current year is not a leap year, treat it as Feb 28th
+            bday_this_year = contact.birthday.replace(day=28, year=today.year)
+        else:
+            # For all other cases, just replace the year
+            bday_this_year = contact.birthday.replace(year=today.year)
+
+        if today <= bday_this_year <= next_week:
+            upcoming.append(contact)
+
+    return upcoming
