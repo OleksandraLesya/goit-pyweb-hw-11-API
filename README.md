@@ -1,7 +1,7 @@
-# FastAPI Contact Book
+# FastAPI Contact Book with a secure authentication system.
 
 A modern RESTful API service built with FastAPI and PostgreSQL to manage a contact book. 
-It supports full CRUD operations, advanced filtering, and birthday reminders.
+It supports full CRUD operations, advanced filtering, and birthday reminders with a secure authentication system.
 
 ## Features
 
@@ -16,24 +16,39 @@ It supports full CRUD operations, advanced filtering, and birthday reminders.
 - Environment-based configuration with `.env`
 - Poetry for dependency management
 
+## Authentication & Authorization
+- Authentication: User registration and login with JWT tokens. 
+- Authorization: Protected routes using JWT tokens. 
+- Contact Ownership: Users can only manage their own contacts. 
+- Password Hashing: Secure password storage. 
+- Gravatar Integration: User avatars based on email.
+
 ## Project Structure
 HWPW11/
 ├── app/
 │   ├── __init__.py
+│   ├── conf/
+│   │   └── config.py
 │   ├── database/
 │   │   ├── __init__.py
 │   │   └── db.py
 │   ├── models/
 │   │   ├── __init__.py
+│   │   ├── users.py
 │   │   └── contact.py
 │   ├── schemas/
 │   │   ├── __init__.py
+│   │   ├── users.py
 │   │   └── contact.py
+│   ├── services/
+│   │   └── auth.py
 │   ├── repository/
 │   │   ├── __init__.py
+│   │   ├── users.py
 │   │   └── contact.py
 │   └── routes/
 │       ├── __init__.py
+│       ├── auth.py
 │       └── contacts.py
 ├── main.py
 ├── README.md
@@ -43,6 +58,7 @@ HWPW11/
 ├── alembic.ini
 ├── alembic/ 
 │   └── versions/
+│       ├── 524c86f1d584_add_users_table_and_link_contacts_to_.py
 │   │   └── b0f14953ec69_initial_database_schema.py
 │   ├── env.py
 │   ├── README
@@ -77,12 +93,14 @@ Swagger UI: http://127.0.0.1:8000/docs
 ReDoc: http://127.0.0.1:8000/redoc
 
 ## Example Requests
-GET /api/contacts/ — List all contacts
-POST /api/contacts/ — Create a new contact
-GET /api/contacts/search/?query=John — Search by name, surname or email
-GET /api/contacts/birthdays/ — Contacts with birthdays in the next 7 days
+POST /api/auth/login - Log in and get JWT tokens
+GET /api/contacts/ — List all contacts (requires authentication)
+POST /api/contacts/ — Create a new contact (requires authentication)
+GET /api/contacts/search/?query=John — Search by name, surname or email (requires authentication)
+GET /api/contacts/birthdays/ — Contacts with birthdays in the next 7 days (requires authentication)
 
 ## Requirements
 Python 3.11+
 Poetry
 PostgreSQL (via Docker or local installation)
+Additional Python libraries: python-jose, passlib, bcrypt, libgravatar

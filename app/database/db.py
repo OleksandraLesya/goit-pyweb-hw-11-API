@@ -1,16 +1,16 @@
 # app/database/db.py
 
-import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
 
-# Load environment variables from the .env file.
-load_dotenv()
+# Now we import the function get_settings() instead of the global settings object.
+from app.conf.config import get_settings
 
-# Get the database URL from the environment variables.
-# We are using "postgresql+asyncpg" to make the connection asynchronous.
-DATABASE_URL = os.getenv("DATABASE_URL").replace("postgresql://", "postgresql+asyncpg://")
+# We call the get_settings() function to get the configuration object.
+settings = get_settings()
+
+# We get the database URL from the settings object.
+DATABASE_URL = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 # Create an asynchronous database engine.
 # `echo=True` will log all SQL statements, which is useful for debugging.

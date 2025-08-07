@@ -22,9 +22,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.database.db import Base
-# We need to import our model to make it visible to Alembic for autogenerate.
-# This is a critical step, as Alembic needs to know about our `Contact` model.
-from app.models.contacts import Contact
+from app.models.users import User # NEW: Import User model for Alembic discovery
+from app.models.contacts import Contact # NEW: Import Contact model for Alembic discovery
 
 target_metadata = Base.metadata
 

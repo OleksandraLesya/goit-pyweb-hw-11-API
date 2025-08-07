@@ -1,26 +1,24 @@
 # main.py
 
-import uvicorn
-from fastapi import FastAPI
-# The import from app.routes.contacts is a great solution!
+from fastapi import FastAPI, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.routes.contacts import router as contacts_router
+from app.database.db import get_db
+from app.routes import contacts as contacts_router # Renamed for clarity
+from app.routes import auth as auth_router # NEW: Import the auth router
 
-# We create an instance of our FastAPI application with a title.
-app = FastAPI(title="Contacts API")
 
-# We include our contacts router with a professional /api prefix.
-app.include_router(contacts_router, prefix="/api")
+app = FastAPI()
+
+# Include the contacts' router. All contact endpoints will be prefixed with /api.
+app.include_router(contacts_router.router, prefix="/api")
+# NEW: Include the authentication router. All auth endpoints will be prefixed with /api.
+app.include_router(auth_router.router, prefix="/api")
 
 
 @app.get("/")
-def read_root():
+async def read_root():
     """
-    Root endpoint for our application.
+    Root endpoint of the API.
     """
-    return {"message": "Hello World"}
-
-
-if __name__ == "__main__":
-    # The uvicorn server will run our application on localhost at port 8000.
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    return {"message": "Welcome to the Contacts API!"}

@@ -1,7 +1,10 @@
 # app/models/contacts.py
 
 from sqlalchemy import Column, Integer, String, Date, Boolean
+from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.orm import relationship
 from app.database.db import Base
+from app.models.users import User  # Import the User model
 
 
 class Contact(Base):
@@ -10,6 +13,7 @@ class Contact(Base):
 
     This class defines the structure of the 'contacts' table in the database.
     Each instance of this class will represent a single row in the table.
+    It now includes a foreign key to the User model.
     """
     __tablename__ = "contacts"
 
@@ -20,3 +24,7 @@ class Contact(Base):
     phone_number = Column(String(20), unique=True, nullable=True)
     birthday = Column(Date, nullable=False)
     notes = Column(String(255), nullable=True)
+
+    # New: Link contact to a user
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user = relationship('User', backref="contacts")  # Add relationship
