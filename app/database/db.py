@@ -2,7 +2,6 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-
 # Now we import the function get_settings() instead of the global settings object.
 from app.conf.config import get_settings
 

@@ -1,7 +1,10 @@
 # FastAPI Contact Book with a secure authentication system.
 
-A modern RESTful API service built with FastAPI and PostgreSQL to manage a contact book. 
-It supports full CRUD operations, advanced filtering, and birthday reminders with a secure authentication system.
+A modern RESTful API service built with FastAPI and PostgreSQL to manage a contact book.
+It supports full CRUD operations, advanced filtering, 
+and birthday reminders with a secure authentication system. 
+New features in this version include user email verification, rate limiting, CORS support, 
+and avatar management with Cloudinary.
 
 ## Features
 
@@ -15,6 +18,11 @@ It supports full CRUD operations, advanced filtering, and birthday reminders wit
 - Get contacts with upcoming birthdays
 - Environment-based configuration with `.env`
 - Poetry for dependency management
+- Email verification for new users 
+- Rate limiting on contact creation 
+- CORS enabled for web applications 
+- User avatar upload using Cloudinary 
+- Caching of user data with Redis 
 
 ## Authentication & Authorization
 - Authentication: User registration and login with JWT tokens. 
@@ -22,11 +30,14 @@ It supports full CRUD operations, advanced filtering, and birthday reminders wit
 - Contact Ownership: Users can only manage their own contacts. 
 - Password Hashing: Secure password storage. 
 - Gravatar Integration: User avatars based on email.
+- Password reset functionality.
 
 ## Project Structure
 HWPW11/
 ├── app/
 │   ├── __init__.py
+│   ├── templates/
+│   │   └── email_verification_template.html
 │   ├── conf/
 │   │   └── config.py
 │   ├── database/
@@ -41,6 +52,7 @@ HWPW11/
 │   │   ├── users.py
 │   │   └── contact.py
 │   ├── services/
+│       ├── email.py
 │   │   └── auth.py
 │   ├── repository/
 │   │   ├── __init__.py
@@ -49,6 +61,7 @@ HWPW11/
 │   └── routes/
 │       ├── __init__.py
 │       ├── auth.py
+│       ├── users.py
 │       └── contacts.py
 ├── main.py
 ├── README.md
@@ -58,7 +71,8 @@ HWPW11/
 ├── alembic.ini
 ├── alembic/ 
 │   └── versions/
-│       ├── 524c86f1d584_add_users_table_and_link_contacts_to_.py
+│       ├── ....add_users_table_and_link_contacts_to_.py
+│       ├── ....add_avatar_email_verified_to_user_model.py
 │   │   └── b0f14953ec69_initial_database_schema.py
 │   ├── env.py
 │   ├── README

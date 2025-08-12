@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -21,6 +20,15 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   pg_data:
-
+  redis_data:

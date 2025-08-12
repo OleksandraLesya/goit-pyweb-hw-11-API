@@ -1,5 +1,6 @@
 # app/services/auth.py
 
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -12,20 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.db import get_db
 from app.repository import users as repository_users
 from app.models.users import User
-# NEW: Import the function get_settings() instead of the global settings object.
 from app.conf.config import get_settings
+from app.dependencies import redis_client_var
 
-
-# Get the settings object by calling the function.
 settings = get_settings()
 
-# This scheme is used to extract the token from the Authorization header.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
-# Password hashing context.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Use module-level constants for keys, sourced directly from settings.
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
@@ -36,6 +32,7 @@ class Auth:
 
     Handles password hashing, JWT token creation, and token verification.
     """
+
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
         Verifies a plain password against a hashed password.
@@ -55,7 +52,7 @@ class Auth:
         """
         return pwd_context.hash(password)
 
-    async def create_access_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
+    def create_access_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
         """
         Creates a new JWT access token.
 
@@ -72,7 +69,7 @@ class Auth:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
-    async def create_refresh_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
+    def create_refresh_token(self, data: dict, expires_delta: Optional[float] = None) -> str:
         """
         Creates a new JWT refresh token.
 
@@ -86,6 +83,26 @@ class Auth:
         else:
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         to_encode.update({"iat": datetime.now(timezone.utc), "exp": expire, "scope": "refresh_token"})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    def create_email_token(self, data: dict, expires_delta: Optional[float] = None):
+        """
+        Creates a JWT token for email verification with an expiration time.
+
+        :param data: The data to be encoded into the token.
+        :type data: dict
+        :param expires_delta: The expiration time in seconds. Defaults to 900 (15 minutes).
+        :type expires_delta: Optional[float]
+        :return: The encoded JWT token.
+        :rtype: str
+        """
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + timedelta(seconds=expires_delta)
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"iat": datetime.utcnow(), "exp": expire, "scope": "email_verification"})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
@@ -106,9 +123,63 @@ class Auth:
         except JWTError:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
 
+    def get_email_from_token(self, token: str) -> str:
+        """
+        Decodes a JWT email verification token and returns the email.
+
+        :param token: The verification token string.
+        :raises HTTPException: If the token is invalid or expired.
+        :return: The email extracted from the token.
+        """
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload['scope'] == 'email_verification':
+                email = payload['sub']
+                return email
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid scope for token')
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
+
+    def create_reset_token(self, data: dict, expires_delta: Optional[float] = None):
+        """
+        Creates a JWT token for password reset with an expiration time.
+
+        :param data: The data to be encoded into the token.
+        :type data: dict
+        :param expires_delta: The expiration time in seconds. Defaults to 900 (15 minutes).
+        :type expires_delta: Optional[float]
+        :return: The encoded JWT token.
+        :rtype: str
+        """
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + timedelta(seconds=expires_delta)
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"iat": datetime.utcnow(), "exp": expire, "scope": "password_reset"})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    def get_email_from_reset_token(self, token: str) -> str:
+        """
+        Decodes a JWT password reset token and returns the email.
+
+        :param token: The reset token string.
+        :raises HTTPException: If the token is invalid or expired.
+        :return: The email extracted from the token.
+        """
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            if payload['scope'] == 'password_reset':
+                email = payload['sub']
+                return email
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid scope for token')
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials')
+
     async def get_current_user(self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
         """
-        Retrieves the current authenticated user based on the access token.
+        Retrieves the current authenticated user from Redis cache or the database.
 
         :param token: The JWT access token from the request header.
         :param db: The asynchronous database session.
@@ -130,11 +201,33 @@ class Auth:
         except JWTError:
             raise credentials_exception
 
+        # Get the Redis client from the ContextVar
+        redis_client = redis_client_var.get()
+
+        # Try to get the user from Redis cache first
+        user_data_json = await redis_client.get(f"user:{email}")
+
+        if user_data_json:
+            user_data = json.loads(user_data_json)
+            # We create a User object from the cached dictionary
+            user = User(**user_data)
+            return user
+
+        # If the user is not in the cache, retrieve from the database
         user = await repository_users.get_user_by_email(email, db)
         if user is None:
             raise credentials_exception
+
+        # And then save the user to the cache for future requests
+        user_data_to_cache = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "avatar": user.avatar
+        }
+        await redis_client.set(f"user:{user.email}", json.dumps(user_data_to_cache), ex=3600)
+
         return user
 
 
-# Create an instance of the Auth class for use across the application.
 auth_service = Auth()

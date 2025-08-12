@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Date, Boolean
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.orm import relationship
 from app.database.db import Base
-from app.models.users import User  # Import the User model
+from app.models.users import User
 
 
 class Contact(Base):
@@ -27,4 +27,4 @@ class Contact(Base):
 
     # New: Link contact to a user
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    user = relationship('User', backref="contacts")  # Add relationship
+    user = relationship('User', back_populates="contacts")

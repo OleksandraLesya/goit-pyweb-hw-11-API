@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .header {
+            color: #333333;
+            margin-bottom: 20px;
+        }
+        .content {
+            color: #555555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007BFF;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #aaaaaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Привіт, {{ username }}!</h1>
+        <div class="content">
+            <p>Дякуємо за реєстрацію на нашому сервісі. Для завершення, будь ласка,
+                підтвердіть вашу електронну пошту, натиснувши на кнопку нижче.</p>
+            <a href="{{ verification_link }}" class="button">Підтвердити пошту</a>
+        </div>
+        <div class="footer">
+            <p>Якщо ви не реєструвалися на нашому сайті, проігноруйте цей лист.</p>
+            <p>&copy; 2025 Контакти. Усі права захищено.</p>
+        </div>
+    </div>
+</body>
+</html>
